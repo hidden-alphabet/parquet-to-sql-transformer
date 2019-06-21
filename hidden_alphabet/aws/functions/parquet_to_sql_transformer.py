@@ -2,14 +2,19 @@ from multiprocessing.pool import Pool
 from s3fs import S3FileSystem
 import pyarrow.parquet as pq
 import multiprocessing as mp
+from time import strptime
+import datetime
 import pyarrow as pa
 import psycopg2
 import os
+from dotenv import load_dotenv
 
-S3 = S3FileSystem(
-    key=os.environ['ACCESS_KEY_ID'],
-    secret=os.environ['SECRET_ACCESS_KEY']
-)
+# S3 = S3FileSystem(
+#     key=os.environ['ACCESS_KEY_ID'],
+#     secret=os.environ['SECRET_ACCESS_KEY']
+# )
+
+load_dotenv()
 
 query = """
         INSERT INTO twitter(
@@ -26,7 +31,7 @@ query = """
         tweet_time,
         tweet_nonce,
         tweet_language,
-        tweet_timestamp_ms,
+        tweet_timestamp,
         tweet_permalink,
 
         mentions_count,
@@ -66,7 +71,11 @@ query = """
 """
 
 def date_formatter(date):
-    return "{}-{}-{}".format(*date.split(' ')[-3:])
+    day, month, year = date.split(' ')[-3:]
+    return "{}-{}-{}".format(year, strptime(month,'%b').tm_mon, day)
+
+def timestamp_formatter(ms):
+    return datetime.datetime.fromtimestamp(float(ms)/1000.0)
 
 def create_query(filepath):
     db = psycopg2.connect(
@@ -80,6 +89,7 @@ def create_query(filepath):
     parquet = pq.read_table(filepath).to_pydict()
     rows = list(zip(*parquet.values()))
     formatted = [(*row[:9], date_formatter(row[9]), *row[10:]) for row in rows]
+    formatted = [(*row[:12], timestamp_formatter(row[12]), *row[13:]) for row in formatted]
 
     cursor = db.cursor()
     cursor.executemany(query, formatted)
@@ -97,7 +107,8 @@ def handler(event=None, context=None):
 
     records = event.get('Records', [])
 
-    if len(records) > 0:
+    if len(records) > len(records):
+
         objects = [(record['s3']['bucket']['name'], record['s3']['object']['key']) for record in records]
         files = ["s3://{}/{}".format(bucket, key) for bucket, key in objects]
 
