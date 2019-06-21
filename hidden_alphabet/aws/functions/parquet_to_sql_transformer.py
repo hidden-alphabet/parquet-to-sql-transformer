@@ -65,8 +65,8 @@ query = """
     );
 """
 
-def date_formatter(row):
-    return "{}-{}-{}".format(*row[9].split(' ')[-3:])
+def date_formatter(date):
+    return "{}-{}-{}".format(*date.split(' ')[-3:])
 
 def create_query(filepath):
     db = psycopg2.connect(
