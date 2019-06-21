@@ -4,17 +4,12 @@ import pyarrow.parquet as pq
 import multiprocessing as mp
 import pyarrow as pa
 import psycopg2
-import boto3
-import io
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
-
-# S3 = S3FileSystem(key=os.environ['ACCESS_KEY_ID'],
-#                   secret=os.environ['SECRET_ACCESS_KEY']
-# )
-# CLIENT = boto3.client('s3')
+S3 = S3FileSystem(
+    key=os.environ['ACCESS_KEY_ID'],
+    secret=os.environ['SECRET_ACCESS_KEY']
+)
 
 query = """
         INSERT INTO twitter(
@@ -103,7 +98,7 @@ def handler(event=None, context=None):
     records = event.get('Records', [])
 
     if len(records) > 0:
-        objects = [(record['s3']['bucket']['name'], record['s3']['object']['key']) for record in records]]
+        objects = [(record['s3']['bucket']['name'], record['s3']['object']['key']) for record in records]
         files = ["s3://{}/{}".format(bucket, key) for bucket, key in objects]
 
         pool = Pool(min(mp.cpu_count(), len(records)))
