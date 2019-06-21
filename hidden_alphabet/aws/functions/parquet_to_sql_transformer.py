@@ -70,6 +70,9 @@ query = """
     );
 """
 
+def date_formatter(row):
+    return "{}-{}-{}".format(*row[9].split(' ')[-3:])
+
 def create_query(filepath):
     db = psycopg2.connect(
         host=os.environ['PG_HOST'],
@@ -81,9 +84,10 @@ def create_query(filepath):
 
     parquet = pq.read_table(filepath).to_pydict()
     rows = list(zip(*parquet.values()))
+    formatted = [(*rows[:-9], date_formatter(row[9]), *rows[-9:]) for row in rows]
 
     cursor = db.cursor()
-    cursor.executemany(query, rows)
+    cursor.executemany(query, formatted)
 
     db.commit()
 
