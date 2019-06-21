@@ -100,13 +100,13 @@ def handler(event=None, context=None):
     """
     status = 'error'
 
-    if len(event['Records']) > 0:
-        len(event['Records'])
+    records = event.get('Records', [])
 
-        objects = [(record['s3']['bucket']['name'], record['s3']['object']['key']) for record in event['Records']]
+    if len(records) > 0:
+        objects = [(record['s3']['bucket']['name'], record['s3']['object']['key']) for record in records]]
         files = ["s3://{}/{}".format(bucket, key) for bucket, key in objects]
 
-        pool = Pool(min(mp.cpu_count(), len(event['Records'])))
+        pool = Pool(min(mp.cpu_count(), len(records)))
 
         queries = pool.map(create_query, files)
 
